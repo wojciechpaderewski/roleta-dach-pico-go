@@ -17,12 +17,18 @@ port = 1883
 user = 'mqtt-usr'
 password = '1369'
 client_id = 'home_assistant'
-topic_pub = b'/pokoj-wojtka/roleta-dach'
+sub_topic = b'/pokoj-wojtka/roleta-dach'
 topic_msg = b'Movement Detected'
+
+def callback(topic, msg):
+    if(topic == sub_topic):
+        print(msg)
 
 def mqtt_connect():
     client = MQTTClient(client_id, mqtt_server, port, user, password, keepalive=3600)
+    client.set_callback(callback)
     client.connect()
+    client.subscribe(sub_topic)
     print('Connected to %s MQTT Broker'%(mqtt_server))
     return client
 
@@ -31,13 +37,13 @@ def reconnect():
     time.sleep(5)
     machine.reset()
 
+
 try:
     client = mqtt_connect()
 except OSError as e:
     reconnect()
 while True:
     if sensor.value() == 0:
-        client.publish(topic_pub, topic_msg)
-        time.sleep(3)
+        client.subscribe(sub_topic)
     else:
         pass
