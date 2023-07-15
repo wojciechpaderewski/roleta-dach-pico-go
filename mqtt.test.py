@@ -20,14 +20,15 @@ client_id = 'home_assistant'
 sub_topic = b'wojt-room/cover/roof/set'
 pub_topic = b'wojt-room/cover/roof/state'
 
-topic_msg = 'unknown'
+topic_msg = 'closed'
 
 def callback(topic, msg):
-    print('callback')
     global topic_msg
     print(setState(msg))
     if(topic == sub_topic):
         topic_msg = setState(msg)
+        time.sleep(3)
+        client.publish(pub_topic, topic_msg)
     
 
 def mqtt_connect():
@@ -57,14 +58,10 @@ def setState(msg):
 
 try:
     client = mqtt_connect()
-    client.subscribe(sub_topic)
 except OSError as e:
     reconnect()
 while True:
     if sensor.value() == 0:
         client.check_msg()
-        if(topic_msg != 'unknown'):
-            time.sleep(2)
-            client.publish(pub_topic, topic_msg)
     else:
         pass
