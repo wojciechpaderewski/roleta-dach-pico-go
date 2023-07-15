@@ -17,12 +17,18 @@ port = 1883
 user = 'mqtt-usr'
 password = '1369'
 client_id = 'home_assistant'
-sub_topic = b'/pokoj-wojtka/roleta-dach'
-topic_msg = b'Movement Detected'
+sub_topic = b'wojt-room/cover/roof/set'
+pub_topic = b'wojt-room/cover/roof/state'
+
+topic_msg = 'unknown'
 
 def callback(topic, msg):
+    print('callback')
+    global topic_msg
+    print(setState(msg))
     if(topic == sub_topic):
-        print(msg)
+        topic_msg = setState(msg)
+    
 
 def mqtt_connect():
     client = MQTTClient(client_id, mqtt_server, port, user, password, keepalive=3600)
@@ -38,12 +44,27 @@ def reconnect():
     machine.reset()
 
 
+def setState(msg):
+    if msg == b'OPEN':
+
+        return 'open'
+    elif msg == b'CLOSE':
+
+        return 'closed'
+    else:
+
+        return 'unknown'
+
 try:
     client = mqtt_connect()
+    client.subscribe(sub_topic)
 except OSError as e:
     reconnect()
 while True:
     if sensor.value() == 0:
-        client.subscribe(sub_topic)
+        client.check_msg()
+        if(topic_msg != 'unknown'):
+            time.sleep(2)
+            client.publish(pub_topic, topic_msg)
     else:
         pass
