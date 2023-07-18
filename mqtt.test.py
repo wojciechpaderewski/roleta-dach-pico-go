@@ -19,16 +19,23 @@ password = '1369'
 client_id = 'home_assistant'
 sub_topic = b'wojt-room/cover/roof/set'
 pub_topic = b'wojt-room/cover/roof/state'
+pos_sub = b'wojt-room/cover/roof/set_position'
+pos_pub = b'wojt-room/cover/roof/position'
 
 topic_msg = 'closed'
 
 def callback(topic, msg):
     global topic_msg
-    print(setState(msg))
+    print((topic, msg))
     if(topic == sub_topic):
         topic_msg = setState(msg)
         time.sleep(3)
         client.publish(pub_topic, topic_msg)
+    if(topic == pos_sub):
+        print(msg)
+        sub_topicmsg = '100'
+        time.sleep(3)
+        client.publish(pos_pub, sub_topicmsg)
     
 
 def mqtt_connect():
@@ -36,6 +43,7 @@ def mqtt_connect():
     client.set_callback(callback)
     client.connect()
     client.subscribe(sub_topic)
+    client.subscribe(pos_sub)
     print('Connected to %s MQTT Broker'%(mqtt_server))
     return client
 
