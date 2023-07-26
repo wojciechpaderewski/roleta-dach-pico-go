@@ -39,7 +39,7 @@ def moveToGoal(newGoal):
 def update():
     handelMoveForward()
     handelMoveBackward()
-    handelReady()
+    handelStop()
     hendelMoveToPosition()
     updateEndstop()
     updateEncoder()
@@ -84,7 +84,7 @@ def handelMoveForward():
     move_forward()
 
 
-def handelReady():
+def handelStop():
     if isAnyButtonPressed() or state == 'moveToPosition':
         return
     

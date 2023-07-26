@@ -1,6 +1,5 @@
 import HAcomunication
 import control
-import time
 
 try:
     HAcomunication.init()
