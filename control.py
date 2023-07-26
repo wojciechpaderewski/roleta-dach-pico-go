@@ -46,20 +46,48 @@ def update():
     handelSingelClicks()
     handelDoubleClicks()
 
+def handelMoveBackward():
+    global state
+    
+    if state != 'moveBackward':
+        return
+    
+    if not endstop.value(): 
+        stop()
+        state = 'ready'
+        return
+    
+    if isAnyButtonPressed():	
+        state = 'ready'
+        return
+    
+    move_backward()
+    
+def getEndstop():
+    return endstop.value()
+    
 def handelMoveForward():
+    global state
+    
     if state != 'moveForward':
+        return
+    
+    if getDistance() >= maxEncoderValue: 
+        stop()
+        state = 'ready'
+        return
+    
+    if isAnyButtonPressed():
+        state = 'ready'
         return
     
     move_forward()
 
-def handelMoveBackward():
-    if state != 'moveBackward':
-        return
-    
-    move_backward()
-
 
 def handelReady():
+    if isAnyButtonPressed() or state == 'moveToPosition':
+        return
+    
     if state == 'moveBackward' or state == 'moveForward':
         return
     
@@ -69,25 +97,31 @@ def handelReady():
 def hendelMoveToPosition():
     global state
     global goal
-    if state != 'moveToPosition':
-        return
     
     if goal > maxEncoderValue:
         goal = maxEncoderValue
     elif goal < 0:
         goal = 0
 
-    if getDistance() < goal:
-        if isAnyButtonPressed() or not endstop.value():
+    if getDistance() > goal and state == 'moveToPosition':
+        if isAnyButtonPressed():
+            state = 'ready'
+            return
+        state = 'moveBackward'
+        
+    if getDistance() <= goal and state == 'moveBackward' and goal != 0:
+        state = 'ready'
+        return
+        
+    if getDistance() < goal and state == 'moveToPosition':
+        if isAnyButtonPressed():
             state = 'ready'
             return
         state = 'moveForward'
         
-    if endstop.value():
-        if isAnyButtonPressed() or getDistance() > goal:
-            state = 'ready'
-            return
-        state = 'moveBackward'
+    if getDistance() >= goal and state == 'moveForward':
+        state = 'ready'
+        return
 
 def getState():
     return state
@@ -111,15 +145,15 @@ def updateEncoder():
         isUp = True
 
 def handelSingelClicks():
-
+    global state
     if up_button.value() and not isUp:
         move_forward()
     elif down_button.value() and not isDown:
         move_backward()
     elif mode_button.value():
-        resetEncoder()
-    else:
         stop()
+        state = 'ready'
+        resetEncoder()
 
 
 def isAnyButtonPressed():

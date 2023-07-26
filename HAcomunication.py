@@ -33,16 +33,14 @@ def callback(topic, msg):
         print('Received %s on topic %s'%(msg, topic))
         onSetTopic(msg)
     if(topic == set_position_topic):
-        global lastMsg
         print('Received %s on topic %s'%(msg, topic))
-        lastMsg = msg
         onSetPositionTopic(msg)
 
 def onSetTopic(msg):
     if msg == b'OPEN':
         print('Opening cover')
         client.publish(state_topic, 'opening')
-        control.moveToGoal(100)
+        control.moveToGoal(control.maxEncoderValue)
     elif msg == b'CLOSE':
         print('Closing cover')
         client.publish(state_topic, 'closing')
@@ -58,8 +56,9 @@ def onSetTopic(msg):
         control.stop()
 
 def onSetPositionTopic(msg):
-    print('Moving to position %s'%(msg))
-    control.moveToGoal(int(msg))
+    value = int(msg)
+    print('Moving to position %s'%(str(value)))
+    control.moveToGoal(int(value))
 
 
 def init():
@@ -73,8 +72,8 @@ def init():
     wlan.connect("Moria","Barahir6")
     time.sleep(5)
     client = mqtt_connect()
-    # client.subscribe(set_topic)
-    # client.subscribe(set_position_topic)
+    client.subscribe(set_topic)
+    client.subscribe(set_position_topic)
     return client
 
 def reconnect():
@@ -82,21 +81,25 @@ def reconnect():
     time.sleep(5)
     machine.reset()
 
+
+bufferForInertion = 4
+
 def publishState():
     global lastState
-    global lastPosition
-
-    if control.getDistance() <= 0 and lastState != 'closed':
+    print('publishState' , control.goal, control.getDistance())
+    if control.goal - bufferForInertion > control.getDistance() and lastState != 'opening' and lastState != 'open':
+        client.publish(state_topic, 'opening')
+        lastState = 'opening'
+    elif control.goal + bufferForInertion < control.getDistance() and lastState != 'closing' and lastState != 'closed':
+        client.publish(state_topic, 'closing')
+        lastState = 'closing'
+        
+    if not control.getEndstop() and lastState != 'closed':
         client.publish(state_topic, 'closed')
         lastState = 'closed'
     elif control.getDistance() >= control.maxEncoderValue and lastState != 'open':
         client.publish(state_topic, 'open')
         lastState = 'open'
-    else :
-        if lastState != 'stopped':
-            client.publish(state_topic, 'stopped')
-            lastState = 'stopped'
-
 
 def publishPosition():
     global lastPosition
