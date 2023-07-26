@@ -1,8 +1,12 @@
 import HAcomunication
 import control
+import time
 
-HAcomunication.init()
+
+print('Starting main.py')
+initziled = HAcomunication.init()
 
 while True:
-    control.updateManualControl()
-    HAcomunication.update()
+    if initziled:
+        HAcomunication.update()
+        control.updateManualControl()

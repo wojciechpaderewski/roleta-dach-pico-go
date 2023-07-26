@@ -82,6 +82,7 @@ def moveToPosition(position):
             stop()
             break
         move_forward()
+        
 
     while endstop.value():
         if isAnyButtonPressed() or getDistance() > position:
