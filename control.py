@@ -17,17 +17,80 @@ detectDoubleClickState = 0
 isDown = False
 isUp = False
 
+state = 'ready'
+
 endstop = Pin(2, Pin.IN, Pin.PULL_UP)
 up_button = Pin(4, Pin.IN, Pin.PULL_DOWN)
 down_button = Pin(5, Pin.IN, Pin.PULL_DOWN)
 mode_button = Pin(6, Pin.IN, Pin.PULL_DOWN)
 
+goal = 0
 
-def updateManualControl():
+def setState(newState):
+    global state
+    state = newState
+
+def moveToGoal(newGoal):
+    global state
+    global goal
+    goal = newGoal
+    state = 'moveToPosition'
+
+def update():
+    handelMoveForward()
+    handelMoveBackward()
+    handelReady()
+    hendelMoveToPosition()
     updateEndstop()
     updateEncoder()
     handelSingelClicks()
     handelDoubleClicks()
+
+def handelMoveForward():
+    if state != 'moveForward':
+        return
+    
+    move_forward()
+
+def handelMoveBackward():
+    if state != 'moveBackward':
+        return
+    
+    move_backward()
+
+
+def handelReady():
+    if state == 'moveBackward' or state == 'moveForward':
+        return
+    
+    stop()
+
+
+def hendelMoveToPosition():
+    global state
+    global goal
+    if state != 'moveToPosition':
+        return
+    
+    if goal > maxEncoderValue:
+        goal = maxEncoderValue
+    elif goal < 0:
+        goal = 0
+
+    if getDistance() < goal:
+        if isAnyButtonPressed() or not endstop.value():
+            state = 'ready'
+            return
+        state = 'moveForward'
+        
+    if endstop.value():
+        if isAnyButtonPressed() or getDistance() > goal:
+            state = 'ready'
+            return
+        state = 'moveBackward'
+
+def getState():
+    return state
 
 def milis():
     return time() * 1000
@@ -48,6 +111,7 @@ def updateEncoder():
         isUp = True
 
 def handelSingelClicks():
+
     if up_button.value() and not isUp:
         move_forward()
     elif down_button.value() and not isDown:
@@ -57,38 +121,6 @@ def handelSingelClicks():
     else:
         stop()
 
-def openCover():
-    while getDistance() < maxEncoderValue:
-        if isAnyButtonPressed() or not endstop.value():
-            stop()
-            break
-        move_forward()
-
-def closeCover():
-    while endstop.value():
-            if isAnyButtonPressed() or getDistance() > maxEncoderValue:
-                stop()
-                break
-            move_backward()
-
-def moveToPosition(position):
-    if position > maxEncoderValue:
-        position = maxEncoderValue
-    elif position < 0:
-        position = 0
-
-    while getDistance() < position:
-        if isAnyButtonPressed() or not endstop.value():
-            stop()
-            break
-        move_forward()
-        
-
-    while endstop.value():
-        if isAnyButtonPressed() or getDistance() > position:
-            stop()
-            break
-        move_backward()
 
 def isAnyButtonPressed():
     if up_button.value() or down_button.value() or mode_button.value():
@@ -149,11 +181,12 @@ def doubleClickStateMachine():
     
 
 def handelDoubleClicks(): 
+
     if doubleClickDetected and currentButton == 'up':
-        openCover()
+        moveToGoal(maxEncoderValue)
 
     if doubleClickDetected and currentButton == 'down':
-        closeCover()
+        moveToGoal(0)
     
     watchDoubleClickTimers()
     doubleClickStateMachine()

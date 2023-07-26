@@ -1,7 +1,7 @@
 import network
 import time
 import control
-from machine import Pin
+import machine
 from umqtt.simple import MQTTClient
 
 mqtt_server = '192.168.0.169'
@@ -16,6 +16,9 @@ set_topic = b'wojt-room/cover/roof/set'
 state_topic = b'wojt-room/cover/roof/state'
 set_position_topic = b'wojt-room/cover/roof/set_position'
 position_topic = b'wojt-room/cover/roof/position'
+
+lastState = b''
+lastPosition = b''
 
 def mqtt_connect():
     client = MQTTClient(client_id, mqtt_server, port, user, password, keepalive=3600)
@@ -39,19 +42,16 @@ def onSetTopic(msg):
     if msg == b'OPEN':
         print('Opening cover')
         client.publish(state_topic, 'opening')
-        control.openCover()
-        client.publish(state_topic, 'open')
-        print('Cover opened')
+        control.moveToGoal(100)
     elif msg == b'CLOSE':
         print('Closing cover')
         client.publish(state_topic, 'closing')
-        control.closeCover()
-        client.publish(state_topic, 'closed')
-        print('Cover closed')
+        control.moveToGoal(0)
     elif msg == b'STOP':
         print('Stopping cover')
         client.publish(state_topic, 'stopped')
         control.stop()
+        control.setState('ready')
         print('Cover stopped')
     else :
         print('Unknown command %s'%(msg))
@@ -59,15 +59,8 @@ def onSetTopic(msg):
 
 def onSetPositionTopic(msg):
     print('Moving to position %s'%(msg))
-    control.moveToPosition(int(msg))
-    print('Moved to position %s'%(msg))
+    control.moveToGoal(int(msg))
 
-
-def reconnect():
-    while not wlan.isconnected():
-        print('Failed to connect to the MQTT Broker. Reconnecting...')
-        time.sleep(5)
-        mqtt_connect()
 
 def init():
     print('init')
@@ -78,15 +71,43 @@ def init():
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     wlan.connect("Moria","Barahir6")
+    time.sleep(5)
     client = mqtt_connect()
-    client.subscribe(set_topic)
-    client.subscribe(set_position_topic)
-    return True
+    # client.subscribe(set_topic)
+    # client.subscribe(set_position_topic)
+    return client
+
+def reconnect():
+    print('Failed to connect to the MQTT Broker. Reconnecting...')
+    time.sleep(5)
+    machine.reset()
+
+def publishState():
+    global lastState
+    global lastPosition
+
+    if control.getDistance() <= 0 and lastState != 'closed':
+        client.publish(state_topic, 'closed')
+        lastState = 'closed'
+    elif control.getDistance() >= control.maxEncoderValue and lastState != 'open':
+        client.publish(state_topic, 'open')
+        lastState = 'open'
+    else :
+        if lastState != 'stopped':
+            client.publish(state_topic, 'stopped')
+            lastState = 'stopped'
+
+
+def publishPosition():
+    global lastPosition
+
+    currentDistance = str(int(control.getDistance()))
+    if lastPosition != currentDistance:
+        client.publish(position_topic, currentDistance)
+        lastPosition = currentDistance
 
 
 def update():
-    global lastDistance
     client.check_msg()
-    if lastDistance != control.getDistance():
-        client.publish(position_topic, control.getDistance())
-        lastDistance = control.getDistance()
+    publishState()
+    publishPosition()

@@ -2,11 +2,12 @@ import HAcomunication
 import control
 import time
 
-
 print('Starting main.py')
-initziled = HAcomunication.init()
 
+try:
+    HAcomunication.init()
+except OSError as e:
+    HAcomunication.reconnect()
 while True:
-    if initziled:
-        HAcomunication.update()
-        control.updateManualControl()
+    HAcomunication.update()
+    control.update()
