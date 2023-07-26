@@ -2,8 +2,6 @@ import HAcomunication
 import control
 import time
 
-print('Starting main.py')
-
 try:
     HAcomunication.init()
 except OSError as e:

@@ -38,15 +38,12 @@ def callback(topic, msg):
 
 def onSetTopic(msg):
     if msg == b'OPEN':
-        print('Opening cover')
         client.publish(state_topic, 'opening')
         control.moveToGoal(control.maxEncoderValue)
     elif msg == b'CLOSE':
-        print('Closing cover')
         client.publish(state_topic, 'closing')
         control.moveToGoal(0)
     elif msg == b'STOP':
-        print('Stopping cover')
         client.publish(state_topic, 'stopped')
         control.stop()
         control.setState('ready')
@@ -62,7 +59,6 @@ def onSetPositionTopic(msg):
 
 
 def init():
-    print('init')
     global client
     global wlan
 
@@ -86,7 +82,7 @@ bufferForInertion = 4
 
 def publishState():
     global lastState
-    print('publishState' , control.goal, control.getDistance())
+    
     if control.goal - bufferForInertion > control.getDistance() and lastState != 'opening' and lastState != 'open':
         client.publish(state_topic, 'opening')
         lastState = 'opening'
