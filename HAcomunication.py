@@ -24,7 +24,7 @@ lastPosition = b''
 lastMillis = 0
 
 def mqtt_connect():
-    client = MQTTClient(client_id, mqtt_server, port, user, password, keepalive=3600)
+    client = MQTTClient(client_id, mqtt_server, port, user, password, keepalive=60)
     client.set_callback(callback)
     client.connect()
     print('Connected to %s MQTT Broker'%(mqtt_server))
