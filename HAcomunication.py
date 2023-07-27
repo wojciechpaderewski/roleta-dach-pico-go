@@ -16,9 +16,12 @@ set_topic = b'wojt-room/cover/roof/set'
 state_topic = b'wojt-room/cover/roof/state'
 set_position_topic = b'wojt-room/cover/roof/set_position'
 position_topic = b'wojt-room/cover/roof/position'
+availability_topic = b'wojt-room/cover/roof/availability'
 
 lastState = b''
 lastPosition = b''
+
+lastMillis = 0
 
 def mqtt_connect():
     client = MQTTClient(client_id, mqtt_server, port, user, password, keepalive=3600)
@@ -105,8 +108,15 @@ def publishPosition():
         client.publish(position_topic, currentDistance)
         lastPosition = currentDistance
 
+def publishAvailability():
+    global lastMillis
+    if control.milis() - lastMillis > 10000:
+        client.ping()
+        client.publish(availability_topic, 'online')
+        lastMillis = control.milis()
 
 def update():
     client.check_msg()
     publishState()
     publishPosition()
+    publishAvailability()
