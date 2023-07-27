@@ -92,6 +92,10 @@ def publishState():
     elif control.goal + bufferForInertion < control.getDistance() and lastState != 'closing' and lastState != 'closed':
         client.publish(state_topic, 'closing')
         lastState = 'closing'
+
+    if control.goal - bufferForInertion < control.getDistance() < control.goal + bufferForInertion and lastState != 'stopped':
+        client.publish(state_topic, 'stopped')
+        lastState = 'stopped'
         
     if not control.getEndstop() and lastState != 'closed':
         client.publish(state_topic, 'closed')
