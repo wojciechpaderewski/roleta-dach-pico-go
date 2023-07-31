@@ -5,18 +5,6 @@ from time import time
 
 maxEncoderValue = 570
 
-firstClickTime = 0
-secondClickTime = 0
-
-doubleClickTime = 550
-
-doubleClickDetected = False
-currentButton = 'none'
-detectDoubleClickState = 0
-
-isDown = False
-isUp = False
-
 state = 'ready'
 
 endstop = Pin(2, Pin.IN, Pin.PULL_UP)
@@ -41,10 +29,7 @@ def update():
     handelMoveBackward()
     handelStop()
     hendelMoveToPosition()
-    updateEndstop()
-    updateEncoder()
     handelSingelClicks()
-    handelDoubleClicks()
 
 def handelMoveBackward():
     global state
@@ -52,7 +37,7 @@ def handelMoveBackward():
     if state != 'moveBackward':
         return
     
-    if not endstop.value(): 
+    if not endstop.value() or getDistance() <= 0: 
         stop()
         state = 'ready'
         return
@@ -109,7 +94,7 @@ def hendelMoveToPosition():
             return
         state = 'moveBackward'
         
-    if getDistance() <= goal and state == 'moveBackward' and goal != 0:
+    if getDistance() <= goal and state == 'moveBackward':
         state = 'ready'
         return
         
@@ -129,98 +114,28 @@ def getState():
 def milis():
     return time() * 1000
 
-def updateEndstop():
-    global isDown
-    if not endstop.value():
-        isDown = True
-        resetEncoder()
-    elif endstop.value():
-        isDown = False
-
-def updateEncoder():
-    global isUp
-    if getDistance() < maxEncoderValue:
-        isUp = False
-    elif getDistance() > maxEncoderValue:
-        isUp = True
-
 def handelSingelClicks():
     global state
-    if up_button.value() and not isUp:
+    if up_button.value() and getDistance() <= maxEncoderValue:
         move_forward()
-    elif down_button.value() and not isDown:
+    elif down_button.value():
+        if endstop.value() == 0:
+            onEndstopReached()
+            return
         move_backward()
     elif mode_button.value():
         stop()
         state = 'ready'
         resetEncoder()
 
+def onEndstopReached():
+    global state
+    stop()
+    resetEncoder()
+    state = 'ready'
 
 def isAnyButtonPressed():
     if up_button.value() or down_button.value() or mode_button.value():
         return True
     else:
         return False
-
-
-def watchDoubleClickTimers():
-    global doubleClickDetected
-    global detectDoubleClickState
-
-    if(milis() - firstClickTime > doubleClickTime):
-        detectDoubleClickState = 0
-        doubleClickDetected = False
-
-def doubleClickStateMachine():
-        global detectDoubleClickState
-        global doubleClickDetected
-        global currentButton
-        global firstClickTime
-        global secondClickTime
-
-        if detectDoubleClickState == 0:
-            if up_button.value():
-                firstClickTime = milis()
-                detectDoubleClickState = 1
-                currentButton = 'up'
-            elif down_button.value():
-                firstClickTime = milis()
-                detectDoubleClickState = 1
-                currentButton = 'down'
-        elif detectDoubleClickState == 1:
-            if currentButton == 'up' and not up_button.value():
-                detectDoubleClickState = 2
-            elif currentButton == 'down' and not down_button.value():
-                detectDoubleClickState = 2
-        elif detectDoubleClickState == 2:
-            if currentButton == 'up' and up_button.value():
-                secondClickTime = milis()
-                detectDoubleClickState = 3
-            elif currentButton == 'down' and down_button.value():
-                secondClickTime = milis()
-                detectDoubleClickState = 3
-        elif detectDoubleClickState == 3:
-            if currentButton == 'up' and not up_button.value():
-                detectDoubleClickState = 0
-                if milis() - firstClickTime < doubleClickTime:
-                    doubleClickDetected = True
-                else:
-                    doubleClickDetected = False
-            elif currentButton == 'down' and not down_button.value():
-                detectDoubleClickState = 0
-                if milis() - firstClickTime < doubleClickTime:
-                    doubleClickDetected = True
-                else:
-                    doubleClickDetected = False
-    
-
-def handelDoubleClicks(): 
-
-    if doubleClickDetected and currentButton == 'up':
-        moveToGoal(maxEncoderValue)
-
-    if doubleClickDetected and currentButton == 'down':
-        moveToGoal(0)
-    
-    watchDoubleClickTimers()
-    doubleClickStateMachine()

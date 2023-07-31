@@ -9,19 +9,19 @@ port = 1883
 user = 'mqtt-usr'
 password = '1369'
 client_id = 'home_assistant'
+pingIntervalTime = 20000
 
 lastDistance = 0
+bufferForInertion = 4
+lastMillis = 0
 
 set_topic = b'wojt-room/cover/roof/set'
 state_topic = b'wojt-room/cover/roof/state'
 set_position_topic = b'wojt-room/cover/roof/set_position'
 position_topic = b'wojt-room/cover/roof/position'
-availability_topic = b'wojt-room/cover/roof/availability'
 
 lastState = b''
 lastPosition = b''
-
-lastMillis = 0
 
 def mqtt_connect():
     client = MQTTClient(client_id, mqtt_server, port, user, password, keepalive=3600)
@@ -81,8 +81,6 @@ def reconnect():
     machine.reset()
 
 
-bufferForInertion = 4
-
 def publishState():
     global lastState
     
@@ -112,15 +110,14 @@ def publishPosition():
         client.publish(position_topic, currentDistance)
         lastPosition = currentDistance
 
-def publishAvailability():
+def pingBroker():
     global lastMillis
-    if control.milis() - lastMillis > 10000:
+    if control.milis() - lastMillis > pingIntervalTime:
         client.ping()
-        client.publish(availability_topic, 'online')
         lastMillis = control.milis()
 
 def update():
     client.check_msg()
     publishState()
     publishPosition()
-    publishAvailability()
+    pingBroker()
