@@ -48,7 +48,7 @@ def handelMoveBackward():
     
     move_backward()
     
-def getEndstop():
+def getEndstopValue():
     return endstop.value()
     
 def handelMoveForward():
@@ -107,9 +107,6 @@ def hendelMoveToPosition():
     if getDistance() >= goal and state == 'moveForward':
         state = 'ready'
         return
-
-def getState():
-    return state
 
 def milis():
     return time() * 1000

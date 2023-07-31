@@ -60,7 +60,6 @@ def onSetPositionTopic(msg):
     print('Moving to position %s'%(str(value)))
     control.moveToGoal(int(value))
 
-
 def init():
     global client
     global wlan
@@ -95,7 +94,7 @@ def publishState():
         client.publish(state_topic, 'stopped')
         lastState = 'stopped'
         
-    if not control.getEndstop() and lastState != 'closed':
+    if not control.getEndstopValue() and lastState != 'closed':
         client.publish(state_topic, 'closed')
         lastState = 'closed'
     elif control.getDistance() >= control.maxEncoderValue and lastState != 'open':
