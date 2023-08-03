@@ -94,7 +94,7 @@ def publishState():
         client.publish(state_topic, 'stopped')
         lastState = 'stopped'
         
-    if not control.getEndstopValue() and lastState != 'closed':
+    if (not control.getEndstopValue() or control.getDistance() <= 0) and lastState != 'closed':
         client.publish(state_topic, 'closed')
         lastState = 'closed'
     elif control.getDistance() >= control.maxEncoderValue and lastState != 'open':
@@ -116,6 +116,9 @@ def pingBroker():
         lastMillis = control.milis()
 
 def update():
+    if control.isHommed == False:
+        return
+
     client.check_msg()
     publishState()
     publishPosition()

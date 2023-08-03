@@ -1,4 +1,5 @@
 from machine import Pin
+import machine
 from servo import move_forward, move_backward, stop
 from encoder import getDistance, resetEncoder
 from time import time
@@ -11,6 +12,11 @@ endstop = Pin(2, Pin.IN, Pin.PULL_UP)
 up_button = Pin(4, Pin.IN, Pin.PULL_DOWN)
 down_button = Pin(5, Pin.IN, Pin.PULL_DOWN)
 mode_button = Pin(6, Pin.IN, Pin.PULL_DOWN)
+
+lastEncoderValue = 0
+lastEncoderValueTime = 0
+
+isHommed = False
 
 goal = 0
 
@@ -25,8 +31,12 @@ def moveToGoal(newGoal):
     state = 'moveToPosition'
 
 def update():
-    handelMoveForward()
+    encoderNotMovingProtection()
     handelMoveBackward()
+    if not isHommed:
+        autoHome()
+        return
+    handelMoveForward()
     handelStop()
     hendelMoveToPosition()
     handelSingelClicks()
@@ -50,6 +60,34 @@ def handelMoveBackward():
     
 def getEndstopValue():
     return endstop.value()
+
+def autoHome():
+    global state
+    global isHommed
+    
+    if not endstop.value():
+        stop()
+        state = 'ready'
+        isHommed = True
+        resetEncoder()
+        return
+    
+    state = 'moveBackward'
+
+def encoderNotMovingProtection():
+    global state
+    global lastEncoderValue
+    global lastEncoderValueTime
+    
+    if state == 'moveBackward' or state == 'moveForward':
+        if lastEncoderValue == getDistance():
+            if lastEncoderValueTime + 1000 < milis():
+                stop()
+                state = 'ready'
+                return
+        else:
+            lastEncoderValue = getDistance()
+            lastEncoderValueTime = milis()
     
 def handelMoveForward():
     global state
@@ -113,6 +151,7 @@ def milis():
 
 def handelSingelClicks():
     global state
+
     if up_button.value() and getDistance() <= maxEncoderValue:
         move_forward()
     elif down_button.value():
