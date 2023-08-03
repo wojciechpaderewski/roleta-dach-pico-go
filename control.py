@@ -17,6 +17,7 @@ lastEncoderValue = 0
 lastEncoderValueTime = 0
 
 isHommed = False
+isEncoderCiriticalError = False
 
 goal = 0
 
@@ -31,11 +32,20 @@ def moveToGoal(newGoal):
     state = 'moveToPosition'
 
 def update():
+    global isHommed
+    global isEncoderCiriticalError
+    
+    if isEncoderCiriticalError:
+        if mode_button.value() == 1:
+            isEncoderCiriticalError = False
+            isHommed = True
+        stop()
+        return
     encoderNotMovingProtection()
-    handelMoveBackward()
     if not isHommed:
         autoHome()
         return
+    handelMoveBackward()
     handelMoveForward()
     handelStop()
     hendelMoveToPosition()
@@ -65,29 +75,46 @@ def autoHome():
     global state
     global isHommed
     
+    if isAnyButtonPressed():
+        isHommed = True
+    
     if not endstop.value():
         stop()
         state = 'ready'
         isHommed = True
         resetEncoder()
         return
-    
-    state = 'moveBackward'
+
+    move_backward()    
 
 def encoderNotMovingProtection():
     global state
     global lastEncoderValue
     global lastEncoderValueTime
+    global isEncoderCiriticalError
     
-    if state == 'moveBackward' or state == 'moveForward':
-        if lastEncoderValue == getDistance():
-            if lastEncoderValueTime + 1000 < milis():
-                stop()
-                state = 'ready'
+    if state == 'moveBackward' or not isHommed:
+        if lastEncoderValue - 0.20 < getDistance() and getDistance() != 0 and lastEncoderValue != 0:
+            if lastEncoderValueTime + 500 < milis():
+                print(lastEncoderValue, getDistance(), 'backward')
+                isEncoderCiriticalError = True
                 return
         else:
             lastEncoderValue = getDistance()
             lastEncoderValueTime = milis()
+    elif state == 'moveForward':
+        if lastEncoderValue + 0.20 > getDistance() and getDistance() != 0 and lastEncoderValue != 0:
+            if lastEncoderValueTime + 500 < milis():
+                print(lastEncoderValue, getDistance(), 'forward')
+                isEncoderCiriticalError = True
+                return
+        else:
+            lastEncoderValue = getDistance()
+            lastEncoderValueTime = milis()
+    else:
+        lastEncoderValue = getDistance()
+        lastEncoderValueTime = milis()
+        
     
 def handelMoveForward():
     global state
@@ -152,7 +179,7 @@ def milis():
 def handelSingelClicks():
     global state
 
-    if up_button.value() and getDistance() <= maxEncoderValue:
+    if getDistance() <= maxEncoderValue and up_button.value():
         move_forward()
     elif down_button.value():
         if endstop.value() == 0:
