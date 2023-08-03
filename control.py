@@ -95,7 +95,7 @@ def encoderNotMovingProtection():
     
     if state == 'moveBackward' or not isHommed:
         if lastEncoderValue - 0.20 < getDistance() and getDistance() != 0 and lastEncoderValue != 0:
-            if lastEncoderValueTime + 500 < milis():
+            if lastEncoderValueTime + 550 < milis():
                 print(lastEncoderValue, getDistance(), 'backward')
                 isEncoderCiriticalError = True
                 return
@@ -104,7 +104,7 @@ def encoderNotMovingProtection():
             lastEncoderValueTime = milis()
     elif state == 'moveForward':
         if lastEncoderValue + 0.20 > getDistance() and getDistance() != 0 and lastEncoderValue != 0:
-            if lastEncoderValueTime + 500 < milis():
+            if lastEncoderValueTime + 550 < milis():
                 print(lastEncoderValue, getDistance(), 'forward')
                 isEncoderCiriticalError = True
                 return

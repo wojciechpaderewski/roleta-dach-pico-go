@@ -3,7 +3,8 @@ import control
 
 try:
     HAcomunication.init()
-except OSError as e:
+except Exception as e:
+    control.stop()
     HAcomunication.reconnect()
 while True:
     HAcomunication.update()
